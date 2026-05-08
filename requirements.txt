@@ -1,7 +1,11 @@
+# =============================================================
+# Runtime dependencies (encoding + evaluation only).
+# These are enough to load a checkpoint and reproduce the
+# retrieval/effectiveness numbers from the paper.
+# =============================================================
 torch>=2.6
 transformers>=4.54,<4.55
 accelerate>=1.0
-deepspeed>=0.18
 peft>=0.13
 datasets>=4.0
 safetensors>=0.4
@@ -13,6 +17,10 @@ pyarrow
 pytrec-eval-terrier>=0.5
 tqdm
 wandb
-# Tevatron training framework — install from source:
-#     pip install git+https://github.com/texttron/tevatron.git
-# (we depend on Tevatron for the training loop and data layout; see README)
+
+# =============================================================
+# Training-only (optional — install with requirements-train.txt
+# if you want to retrain from scratch). Pulls in DeepSpeed; the
+# Tevatron-derived training infrastructure is vendored under
+# src/training/.
+# =============================================================

@@ -1,0 +1,27 @@
+Tevatron (vendored)
+===================
+
+This directory contains a small subset of source files vendored from the
+Tevatron neural retrieval toolkit, used as the base classes for our LLaDA 2
+retrieval training integration:
+
+    _base_arguments.py  <- tevatron/src/tevatron/retriever/arguments.py
+    _base_trainer.py    <- tevatron/src/tevatron/retriever/trainer.py
+    _base_encoder.py    <- tevatron/src/tevatron/retriever/modeling/encoder.py
+
+Upstream project:
+    Name:    Tevatron
+    URL:     https://github.com/texttron/tevatron
+    License: Apache License, Version 2.0
+             http://www.apache.org/licenses/LICENSE-2.0
+
+Modifications relative to upstream are limited to:
+    * Rewriting the package-internal imports (`tevatron.retriever.*`,
+      `from .modeling import ...`) to refer to the locally vendored
+      `_base_*` modules.
+    * Adding this header / NOTICE file.
+
+The remainder of this repository is distributed under the MIT License,
+see the top-level LICENSE file. The three vendored files above remain
+under the Apache 2.0 License of their original project, as required by
+that license.

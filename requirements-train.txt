@@ -1,0 +1,13 @@
+# =============================================================
+# Extra dependencies needed only to retrain DiffRetriever and
+# the baselines from scratch.
+#
+#     pip install -r requirements.txt
+#     pip install -r requirements-train.txt
+#
+# The augmented-triples dataset layout (1 positive + N hard
+# negatives), the contrastive collator, and the Trainer wrappers
+# (originally from Tevatron) are vendored under src/training/ —
+# no extra source-install is required.
+# =============================================================
+deepspeed>=0.18

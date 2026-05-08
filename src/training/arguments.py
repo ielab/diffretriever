@@ -1,15 +1,13 @@
 """
-Arguments for LLaDA 2 block diffusion retrieval with Tevatron.
+Arguments for LLaDA 2 block diffusion retrieval.
+
+Builds on the vendored Tevatron base argument classes (see ``_base_arguments``).
 """
 
 from dataclasses import dataclass, field
 from typing import Optional
 
-import sys
-from pathlib import Path
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root / 'tevatron' / 'src'))
-from tevatron.retriever.arguments import ModelArguments, TevatronTrainingArguments
+from ._base_arguments import ModelArguments, TevatronTrainingArguments
 
 
 @dataclass

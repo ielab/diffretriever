@@ -1,7 +1,7 @@
 """
-Trainer for LLaDA 2 block diffusion retrieval with Tevatron.
+Trainer for LLaDA 2 block diffusion retrieval.
 
-Extends Tevatron's trainer with:
+Extends the vendored Tevatron trainer (see ``_base_trainer``) with:
 - Progressive backbone unfreezing
 - Optional block curriculum (start with fewer blocks, increase over training)
 - Custom _save to handle retrieval head weights
@@ -11,12 +11,7 @@ import torch
 import logging
 import os
 
-import sys
-from pathlib import Path
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root / 'tevatron' / 'src'))
-from tevatron.retriever.trainer import TevatronTrainer
-
+from ._base_trainer import TevatronTrainer
 from .arguments import LLaDA2TrainingArguments
 
 logger = logging.getLogger(__name__)

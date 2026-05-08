@@ -25,10 +25,14 @@ src/
 │   └── sparse_utils.py                Sparse score helpers
 ├── evaluation/
 │   └── evaluator.py              Per-query scoring + metric aggregation
-└── tevatron_integration/         Tevatron training loop integration
+└── training/                    Training loop integration (vendored Tevatron base + LLaDA 2 wrappers)
     ├── arguments.py
     ├── llada_dense.py
-    └── trainer.py
+    ├── trainer.py
+    ├── _base_arguments.py        # vendored from Tevatron (Apache 2.0)
+    ├── _base_encoder.py          # vendored from Tevatron (Apache 2.0)
+    ├── _base_trainer.py          # vendored from Tevatron (Apache 2.0)
+    └── NOTICE                    # vendoring attribution
 
 scripts/
 ├── train_retriever.py            Train DiffRetriever
@@ -62,23 +66,29 @@ Note: this repo bundles only what is needed to reproduce the paper. Internal ana
 
 ## Setup
 
+We use conda for the environment (this is what we used during development).
+
 ```bash
-# 1. Python environment
-python -m venv .venv && source .venv/bin/activate
+# 1. Create env
+conda create -n diffretriever python=3.11 -y
+conda activate diffretriever
+
+# 2. Runtime dependencies (encoding + evaluation)
 pip install -r requirements.txt
 
-# 2. Tevatron (training loop + data layout we depend on)
-pip install git+https://github.com/texttron/tevatron.git
+# 3. (Optional) training dependencies — only needed to retrain
+pip install -r requirements-train.txt
 
-# 3. Pyserini for the BM25 baseline (optional)
+# 4. (Optional) Pyserini for the BM25 baseline
 pip install pyserini
 ```
 
-We use:
+The runtime install is enough to load a released checkpoint, encode queries/passages, and reproduce the effectiveness numbers in the paper. The (formerly Tevatron-based) training infrastructure — encoder base class, contrastive trainer, and argument dataclasses — is vendored under `src/training/` (see `src/training/NOTICE` for Apache 2.0 attribution); no external Tevatron install is required, and it is not imported by the encoding or evaluation paths.
 
+Core versions:
 - `torch >= 2.6`
 - `transformers 4.54.x` (Dream / LLaDA require this version range)
-- `accelerate`, `deepspeed`, `peft` for training
+- `accelerate`, `peft` (runtime) and `deepspeed` (training only)
 - `pytrec-eval-terrier` for retrieval metrics
 
 ---

@@ -1,8 +1,9 @@
 """
-LLaDA 2 Dense Model — Tevatron-compatible
+LLaDA 2 Dense Model
 
-Wraps LLaDA 2's block diffusion retriever to conform to Tevatron's
-EncoderModel interface for training, encoding, and evaluation pipelines.
+Wraps LLaDA 2's block diffusion retriever to conform to the
+``EncoderModel`` interface (vendored from Tevatron, see ``_base_encoder``)
+used for training, encoding, and evaluation pipelines.
 
 No projection layer — embeddings are raw hidden states from the backbone.
 """
@@ -17,12 +18,7 @@ import logging
 import json
 import os
 
-import sys
-from pathlib import Path
-_project_root = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(_project_root / 'tevatron' / 'src'))
-from tevatron.retriever.modeling.encoder import EncoderModel
-
+from ._base_encoder import EncoderModel
 from .arguments import LLaDA2ModelArguments, LLaDA2TrainingArguments
 from ..models.block_schedule import BlockSchedule
 
@@ -33,7 +29,7 @@ MASK_TOKEN_ID = 156895  # LLaDA 2's <|mask|> token id
 
 class LLaDA2DenseModel(EncoderModel):
     """
-    Tevatron-compatible dense retrieval model using LLaDA 2 block diffusion.
+    Dense retrieval model using LLaDA 2 block diffusion.
 
     No projection — uses raw hidden states as embeddings.
     """
