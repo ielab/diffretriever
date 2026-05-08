@@ -1,21 +1,24 @@
 #!/bin/bash
-# Download MS MARCO passage + TREC DL19/DL20 data.
+# Download MS MARCO passage + TREC DL19/DL20 + BEIR-7 data.
 #
 # Usage:
 #   bash scripts/download_data.sh            # all datasets
 #   bash scripts/download_data.sh --msmarco  # MS MARCO only
 #   bash scripts/download_data.sh --dl       # DL19 + DL20 only
+#   bash scripts/download_data.sh --beir     # BEIR-7 only
 
 MSMARCO=0
 DL=0
+BEIR=0
 
 if [[ $# -eq 0 ]]; then
-    MSMARCO=1; DL=1
+    MSMARCO=1; DL=1; BEIR=1
 fi
 while [[ $# -gt 0 ]]; do
     case $1 in
         --msmarco) MSMARCO=1; shift ;;
         --dl)      DL=1;      shift ;;
+        --beir)    BEIR=1;    shift ;;
         *) echo "Unknown argument: $1" >&2; exit 1 ;;
     esac
 done
@@ -125,5 +128,31 @@ if [[ $DL -eq 1 ]]; then
         echo "    dl20/qrels.tsv already exists — skipping"
     fi
 fi
+
+# ── BEIR-7 (NQ, HotpotQA, SciFact, FiQA, ArguAna, Quora, TREC-COVID) ────────
+# Hosted on the public BEIR mirror at TU Darmstadt.
+if [[ $BEIR -eq 1 ]]; then
+    BEIR_BASE="https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets"
+    BEIR_DATASETS=(nq hotpotqa scifact fiqa arguana quora trec-covid)
+    mkdir -p data/beir
+
+    for ds in "${BEIR_DATASETS[@]}"; do
+        echo ">>> BEIR / ${ds}..."
+        if [[ -d "data/beir/${ds}" ]] && [[ -f "data/beir/${ds}/queries.jsonl" ]]; then
+            echo "    data/beir/${ds} already present — skipping"
+            continue
+        fi
+        get "${BEIR_BASE}/${ds}.zip" "/tmp/beir_${ds}.zip" || continue
+        unzip -q -o "/tmp/beir_${ds}.zip" -d data/beir/
+        rm -f "/tmp/beir_${ds}.zip"
+        echo "    data/beir/${ds} ready"
+    done
+fi
+
+# ── NLTK data (stopwords + punkt; required by sparse_utils) ─────────────────
+echo ">>> NLTK data (stopwords, punkt)..."
+python3 -c "import nltk; nltk.download('stopwords', quiet=True); nltk.download('punkt', quiet=True); nltk.download('punkt_tab', quiet=True)" \
+    && echo "    nltk corpora ready" \
+    || echo "    WARNING: nltk download failed (the code will retry at runtime)"
 
 echo ">>> Done."

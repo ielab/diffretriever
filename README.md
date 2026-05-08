@@ -4,6 +4,10 @@ Code for **DiffRetriever: Parallel Representative Tokens for Retrieval with Diff
 
 DiffRetriever is a representative-token retriever for diffusion language models (e.g., Dream, LLaDA). It appends `K` masked positions to a `PromptReps`-style prompt and reads all `K` hidden states and next-token logits in a single bidirectional forward pass — giving multi-vector retrieval at the encoding cost of a single token, where the autoregressive equivalent costs `K` sequential forward passes.
 
+![Architecture overview](assets/architecture.png)
+
+![Effectiveness vs. encoding+search latency on BEIR-7](assets/teaser_latency.png)
+
 > **Models on Hugging Face:** trained checkpoints for DiffRetriever (Dream, LLaDA) and the re-trained baselines (PromptReps, DiffEmbed, RepLLaMA) will be released on the Hugging Face Hub **soon**. They are not available yet — this README will be updated with the model URLs when the release lands.
 
 ---
@@ -58,30 +62,35 @@ Note: this repo bundles only what is needed to reproduce the paper. Internal ana
 
 ## Setup
 
-We use conda for the environment (this is what we used during development).
+We use conda. The pinned `requirements.txt` is a freeze of the env used during development on a single H100 node (CUDA 12.6, Linux x86_64, Python 3.10).
 
 ```bash
 # 1. Create env
-conda create -n diffretriever python=3.11 -y
+conda create -n diffretriever python=3.10 -y
 conda activate diffretriever
 
-# 2. Runtime dependencies (encoding + evaluation)
+# 2. Install pinned dependencies (covers training + encoding + eval)
 pip install -r requirements.txt
 
-# 3. (Optional) training dependencies — only needed to retrain
-pip install -r requirements-train.txt
-
-# 4. (Optional) Pyserini for the BM25 baseline
-pip install pyserini
+# 3. Download the datasets and the small NLTK corpora (stopwords + punkt)
+bash scripts/download_data.sh             # MS MARCO + TREC DL19/DL20 + BEIR-7 + nltk
+# or selectively:
+# bash scripts/download_data.sh --msmarco
+# bash scripts/download_data.sh --beir
 ```
 
-The runtime install is enough to load a released checkpoint, encode queries/passages, and reproduce the effectiveness numbers in the paper. Training uses HuggingFace `Trainer` directly with the retriever classes under `src/models/`; the `requirements-train.txt` extras (DeepSpeed) are only needed if you want to retrain from scratch.
+`requirements.txt` is exhaustive — it covers training (DeepSpeed, accelerate, peft) as well as encoding and evaluation. Training uses HuggingFace `Trainer` directly with the retriever classes under `src/models/`; there is no separate "training extras" file.
 
-Core versions:
-- `torch >= 2.6`
-- `transformers 4.54.x` (Dream / LLaDA require this version range)
-- `accelerate`, `peft` (runtime) and `deepspeed` (training only)
-- `pytrec-eval-terrier` for retrieval metrics
+**Optional but strongly recommended for speed: flash-attention 2.** It is not pinned in `requirements.txt` because the prebuilt wheel is platform-specific. Install the matching wheel for your CUDA / torch / cxx11abi from the [flash-attention releases](https://github.com/Dao-AILab/flash-attention/releases), or:
+
+```bash
+pip install flash-attn --no-build-isolation
+```
+
+Core versions in the freeze:
+- `torch==2.6.0+cu126`, `transformers==4.54.0` (Dream / LLaDA require this exact range)
+- `accelerate==1.12.0`, `peft==0.18.1`, `deepspeed==0.18.8`
+- `pytrec-eval-terrier==0.5.6` for retrieval metrics
 
 ---
 
