@@ -20,7 +20,5 @@ wandb
 
 # =============================================================
 # Training-only (optional — install with requirements-train.txt
-# if you want to retrain from scratch). Pulls in DeepSpeed; the
-# Tevatron-derived training infrastructure is vendored under
-# src/training/.
+# if you want to retrain from scratch). Pulls in DeepSpeed.
 # =============================================================

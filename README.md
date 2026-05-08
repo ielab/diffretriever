@@ -4,7 +4,7 @@ Code for **DiffRetriever: Parallel Representative Tokens for Retrieval with Diff
 
 DiffRetriever is a representative-token retriever for diffusion language models (e.g., Dream, LLaDA). It appends `K` masked positions to a `PromptReps`-style prompt and reads all `K` hidden states and next-token logits in a single bidirectional forward pass — giving multi-vector retrieval at the encoding cost of a single token, where the autoregressive equivalent costs `K` sequential forward passes.
 
-> **Models on Hugging Face:** we plan to release the trained checkpoints for DiffRetriever (Dream, LLaDA) and the re-trained baselines (PromptReps, DiffEmbed, RepLLaMA) on the Hugging Face Hub later. They are not available yet.
+> **Models on Hugging Face:** trained checkpoints for DiffRetriever (Dream, LLaDA) and the re-trained baselines (PromptReps, DiffEmbed, RepLLaMA) will be released on the Hugging Face Hub **soon**. They are not available yet — this README will be updated with the model URLs when the release lands.
 
 ---
 
@@ -23,16 +23,8 @@ src/
 │   ├── block_schedule.py              Multi-step denoising schedule
 │   ├── backbone_adapters.py           HF model loading / LoRA wiring
 │   └── sparse_utils.py                Sparse score helpers
-├── evaluation/
-│   └── evaluator.py              Per-query scoring + metric aggregation
-└── training/                    Training loop integration (vendored Tevatron base + LLaDA 2 wrappers)
-    ├── arguments.py
-    ├── llada_dense.py
-    ├── trainer.py
-    ├── _base_arguments.py        # vendored from Tevatron (Apache 2.0)
-    ├── _base_encoder.py          # vendored from Tevatron (Apache 2.0)
-    ├── _base_trainer.py          # vendored from Tevatron (Apache 2.0)
-    └── NOTICE                    # vendoring attribution
+└── evaluation/
+    └── evaluator.py              Per-query scoring + metric aggregation
 
 scripts/
 ├── train_retriever.py            Train DiffRetriever
@@ -83,7 +75,7 @@ pip install -r requirements-train.txt
 pip install pyserini
 ```
 
-The runtime install is enough to load a released checkpoint, encode queries/passages, and reproduce the effectiveness numbers in the paper. The (formerly Tevatron-based) training infrastructure — encoder base class, contrastive trainer, and argument dataclasses — is vendored under `src/training/` (see `src/training/NOTICE` for Apache 2.0 attribution); no external Tevatron install is required, and it is not imported by the encoding or evaluation paths.
+The runtime install is enough to load a released checkpoint, encode queries/passages, and reproduce the effectiveness numbers in the paper. Training uses HuggingFace `Trainer` directly with the retriever classes under `src/models/`; the `requirements-train.txt` extras (DeepSpeed) are only needed if you want to retrain from scratch.
 
 Core versions:
 - `torch >= 2.6`
