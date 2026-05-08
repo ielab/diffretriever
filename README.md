@@ -6,7 +6,13 @@ DiffRetriever is a representative-token retriever for diffusion language models 
 
 ![Architecture overview](assets/architecture.png)
 
-![Effectiveness vs. encoding+search latency on BEIR-7](assets/teaser_latency.png)
+<br />
+
+<p align="center">
+  <img src="assets/teaser_latency.png" alt="Teaser: BEIR-7 NDCG@10 vs. encoding + search latency" width="60%" />
+</p>
+
+<p align="center"><sub><em>BEIR-7 NDCG@10 vs. encoding + search latency (ms/query, 100K-document MS&nbsp;MARCO sample). Left: zero-shot (PromptReps at K&le;20). Right: fine-tuned (K=4). Dashed lines link single-token (open) and multi-token (filled) variants. <strong>DiffRetriever</strong> gains from multi-token at near single-token cost in both panels; <strong>PromptReps</strong> pays &asymp;15&times; the latency at zero-shot and &asymp;3&times; at fine-tuning, with no consistent gain. Fine-tuned DiffRetriever (Dream, (K<sub>q</sub>,&nbsp;K<sub>p</sub>)=(4,&nbsp;16)) is the strongest BEIR-7 retriever in our comparison.</em></sub></p>
 
 > **Models on Hugging Face:** trained checkpoints for DiffRetriever (Dream, LLaDA) and the re-trained baselines (PromptReps, DiffEmbed, RepLLaMA) will be released on the Hugging Face Hub **soon**. They are not available yet — this README will be updated with the model URLs when the release lands.
 
