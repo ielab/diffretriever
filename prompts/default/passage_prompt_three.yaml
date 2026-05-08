@@ -1,0 +1,4 @@
+system: "You are an AI assistant that can understand human language."
+user_prefix: 'Passage: "'
+user_suffix: '". Use three words to represent the passage in a retrieval task. Make sure your words are in lowercase and split them by space.'
+assistant_prefix: 'The words are: "'

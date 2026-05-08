@@ -1,0 +1,18 @@
+torch>=2.6
+transformers>=4.54,<4.55
+accelerate>=1.0
+deepspeed>=0.18
+peft>=0.13
+datasets>=4.0
+safetensors>=0.4
+einops>=0.8
+nltk>=3.9
+numpy
+pandas
+pyarrow
+pytrec-eval-terrier>=0.5
+tqdm
+wandb
+# Tevatron training framework — install from source:
+#     pip install git+https://github.com/texttron/tevatron.git
+# (we depend on Tevatron for the training loop and data layout; see README)

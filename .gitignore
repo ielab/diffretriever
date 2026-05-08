@@ -1,0 +1,63 @@
+# =============================================================
+# Python
+# =============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# =============================================================
+# Editor / OS
+# =============================================================
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# =============================================================
+# Environments
+# =============================================================
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# =============================================================
+# Experiment artifacts (no need to track)
+# =============================================================
+results/
+runs/
+checkpoints/
+logs/
+wandb/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.npy
+*.npz
+data/
+indexes/
+embeddings/
+
+# =============================================================
+# AI-assistant scratch files — never publish
+# =============================================================
+CLAUDE.md
+.claude/
+GEMINI.md
+COPILOT.md
+.cursorrules
+.cursor/
+.aider*
+AGENTS.md
+.continue/
+notes/scratch/
+notes/agent_*

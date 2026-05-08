@@ -1,0 +1,4 @@
+system: "You are an AI assistant that can understand human language."
+user_prefix: 'Query: "'
+user_suffix: '". Use one word to represent the query in a retrieval task. Make sure your word is in lowercase.'
+assistant_prefix: 'The word is: "'
