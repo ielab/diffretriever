@@ -4,7 +4,7 @@ Code for **DiffRetriever: Parallel Representative Tokens for Retrieval with Diff
 
 DiffRetriever is a representative-token retriever for diffusion language models (e.g., Dream, LLaDA). It appends `K` masked positions to a `PromptReps`-style prompt and reads all `K` hidden states and next-token logits in a single bidirectional forward pass — giving multi-vector retrieval at the encoding cost of a single token, where the autoregressive equivalent costs `K` sequential forward passes.
 
-![Architecture overview](assets/architecture.png)
+![Architecture overview](assets/architecture_animated.svg)
 
 <br />
 
