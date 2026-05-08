@@ -14,6 +14,14 @@ DiffRetriever is a representative-token retriever for diffusion language models 
 
 <p align="center"><sub><em>BEIR-7 NDCG@10 vs. encoding + search latency (ms/query, 100K-document MS&nbsp;MARCO sample). Left: zero-shot (PromptReps at K&le;20). Right: fine-tuned (K=4). Dashed lines link single-token (open) and multi-token (filled) variants. <strong>DiffRetriever</strong> gains from multi-token at near single-token cost in both panels; <strong>PromptReps</strong> pays &asymp;15&times; the latency at zero-shot and &asymp;3&times; at fine-tuning, with no consistent gain. Fine-tuned DiffRetriever (Dream, (K<sub>q</sub>,&nbsp;K<sub>p</sub>)=(4,&nbsp;16)) is the strongest BEIR-7 retriever in our comparison.</em></sub></p>
 
+<br />
+
+<p align="center">
+  <img src="assets/latency_combined.png" alt="Latency scaling: encoding vs input length, search vs index size" width="80%" />
+</p>
+
+<p align="center"><sub><em>Latency scaling on synthetic inputs and indices (single H100, same attention implementation across backbones). <strong>Top row:</strong> encoding latency vs.&nbsp;input sequence length. <strong>Bottom row:</strong> search latency vs.&nbsp;index size (log scale). <strong>Left column:</strong> PromptReps on autoregressive backbones (Qwen2.5, LLaMA3). <strong>Right column:</strong> DiffRetriever on diffusion backbones (Dream, LLaDA). Open markers = single-token, filled = multi-token (AR uses K=4, the fine-tuned cap; diffusion uses the train-selected (K<sub>q</sub>*, K<sub>p</sub>*)). DiffRetriever&#39;s multi-token encoding stays close to its single-token cost, while AR multi-token remains 2&ndash;3&times; AR single-token across the entire input range.</em></sub></p>
+
 > **Models on Hugging Face:** trained checkpoints for DiffRetriever (Dream, LLaDA) and the re-trained baselines (PromptReps, DiffEmbed, RepLLaMA) will be released on the Hugging Face Hub **soon**. They are not available yet — this README will be updated with the model URLs when the release lands.
 
 ---
@@ -47,7 +55,7 @@ scripts/
 ├── prepare_msmarco.py            MS MARCO data prep
 ├── preprocess_msmarco_aug.py     Augmented triples prep
 ├── shard_io.py                   Sharded encoding I/O
-├── download_data.sh              Fetch MS MARCO + TREC DL + BEIR-7
+├── download_data.sh              Fetch MS MARCO + TREC DL + BEIR-7 + NLTK data
 ├── run_train.sh                  Portable launcher: training
 ├── run_encode.sh                 Portable launcher: encoding
 └── run_eval.sh                   Portable launcher: evaluation
@@ -120,9 +128,9 @@ The four backbones used in the paper:
 ### Data
 
 ```bash
-bash scripts/download_data.sh           # MS MARCO + TREC DL 2019/2020 + BEIR-7
-python scripts/prepare_msmarco.py
-python scripts/preprocess_msmarco_aug.py # Tevatron augmented triples
+bash scripts/download_data.sh             # MS MARCO + TREC DL 2019/2020 + BEIR-7 + NLTK
+python scripts/prepare_msmarco.py          # Optional: HF-cached MSMARCO splits
+python scripts/preprocess_msmarco_aug.py   # Pre-tokenize Tevatron/msmarco-passage-aug
 ```
 
 All workflow scripts are minimal portable launchers — open them, edit the variables at the top for your setup, and run. They wrap `scripts/*.py` with the canonical arguments used in the paper.
