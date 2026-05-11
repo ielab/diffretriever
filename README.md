@@ -184,9 +184,10 @@ If you find this work useful, please cite:
 
 ```bibtex
 @article{wang2026diffretriever,
-  title   = {DiffRetriever: Parallel Representative Tokens for Retrieval with Diffusion Language Models},
-  author  = {Wang, Shuai and Yin, Yu and Zhuang, Shengyao and Koopman, Bevan and Zuccon, Guido},
-  year    = {2026},
+  title={DiffRetriever: Parallel Representative Tokens for Retrieval with Diffusion Language Models},
+  author={Wang, Shuai and Yin, Yu and Zhuang, Shengyao and Koopman, Bevan and Zuccon, Guido},
+  journal={arXiv preprint arXiv:2605.07210},
+  year={2026}
 }
 ```
 
