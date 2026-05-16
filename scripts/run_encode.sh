@@ -20,10 +20,12 @@
 set -euo pipefail
 
 # --- Model -----------------------------------------------------
-# Zero-shot diffusion: dream | llada1 | llada15 | llada2 | sdar
-# Zero-shot AR:        llama | qwen25 | qwen3
+# Zero-shot diffusion: dream | llada1 | llada15 | llada2 | llada21
+# Zero-shot AR:        llama | qwen | qwen25 | qwen3
 # Fine-tuned:          trained_diff (pair with --model_dir)
 #                      trained_ar   (pair with --model_dir)
+# (Other model types supported by encode_promptreps.py — diffembed_*, repllama —
+#  are trained-only baselines; call encode_promptreps.py directly for those.)
 MODEL_TYPE=${MODEL_TYPE:-dream}
 MODEL_NAME=${MODEL_NAME:-Dream-org/Dream-v0-Instruct-7B}
 MODEL_DIR=${MODEL_DIR:-}                             # required for trained_* types
@@ -98,7 +100,7 @@ fi
 # Zero-shot AR (llama/qwen)  → --num_pooled_tokens K  (K=1 → 0, single-token mode)
 ar_pooled() { [[ "$1" == "1" ]] && echo "0" || echo "$1"; }
 case "${MODEL_TYPE}" in
-    dream|llada1|llada15|llada2|llada21|sdar|trained_diff)
+    dream|llada1|llada15|llada2|llada21|trained_diff)
         Q_KFLAG=(--n_gen_tokens "${K_Q}" --num_denoise_steps "${NUM_DENOISE_STEPS}")
         P_KFLAG=(--n_gen_tokens "${K_P}" --num_denoise_steps "${NUM_DENOISE_STEPS}")
         ;;
