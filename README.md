@@ -1,8 +1,28 @@
-# DiffRetriever
+<h1 align="center">DiffRetriever</h1>
 
-Code for **DiffRetriever: Parallel Representative Tokens for Retrieval with Diffusion Language Models**.
+<p align="center"><b>Parallel Representative Tokens for Retrieval with Diffusion Language Models</b></p>
 
-DiffRetriever is a representative-token retriever for diffusion language models (e.g., Dream, LLaDA). It appends `K` masked positions to a `PromptReps`-style prompt and reads all `K` hidden states and next-token logits in a single bidirectional forward pass — giving multi-vector retrieval at the encoding cost of a single token, where the autoregressive equivalent costs `K` sequential forward passes.
+<p align="center">
+  <a href="https://arxiv.org/abs/2605.07210"><img alt="arXiv" src="https://img.shields.io/badge/arXiv-2605.07210-b31b1b.svg?logo=arxiv"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
+  <a href="https://www.python.org/downloads/release/python-3100/"><img alt="Python 3.10" src="https://img.shields.io/badge/python-3.10-blue.svg?logo=python&logoColor=white"></a>
+  <a href="https://pytorch.org/"><img alt="PyTorch 2.6" src="https://img.shields.io/badge/PyTorch-2.6+cu126-EE4C2C.svg?logo=pytorch&logoColor=white"></a>
+  <a href="https://huggingface.co/Dream-org/Dream-v0-Instruct-7B"><img alt="HF Models" src="https://img.shields.io/badge/🤗_Models-Dream%20%7C%20LLaDA-yellow"></a>
+  <a href="https://github.com/ielab/diffretriever/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/ielab/diffretriever?style=social"></a>
+</p>
+
+<p align="center">
+  <a href="#-quick-start-30-seconds">Quick Start</a> ·
+  <a href="#-setup">Setup</a> ·
+  <a href="#-backbones">Backbones</a> ·
+  <a href="#-reproducing-the-paper">Reproducing</a> ·
+  <a href="#-repository-layout">Layout</a> ·
+  <a href="#-citation">Citation</a>
+</p>
+
+---
+
+> **TL;DR** — DiffRetriever appends `K` `[MASK]` tokens to a `PromptReps`-style prompt and reads all `K` hidden states **and** next-token logits in a single bidirectional forward pass. That gives multi-vector dense + sparse retrieval at the encoding cost of a single token, where the autoregressive equivalent costs `K` sequential forward passes. Works **zero-shot** on Dream and LLaDA, and reaches SOTA after fine-tuning on MS MARCO.
 
 ![Architecture overview](assets/architecture_animated.svg)
 
@@ -26,7 +46,82 @@ DiffRetriever is a representative-token retriever for diffusion language models 
 
 ---
 
-## What's in this repo
+## 🚀 Quick Start (30 seconds)
+
+**Zero-shot retrieval with Dream-7B, end-to-end in pure Python — no SLURM, no scripts, no data download.**
+
+After [setting up the env](#-setup) (`pip install -r requirements.txt`), paste this whole block into a file (`demo.py`) at the repo root and run it. The model auto-downloads from HuggingFace on first run (~14 GB).
+
+```python
+"""DiffRetriever zero-shot demo — Dream-7B, K=4 representative tokens, single denoising step."""
+import sys
+sys.path.insert(0, "src")  # repo-local import
+
+import torch
+import torch.nn.functional as F
+from models.dream_retriever import DreamRetriever
+
+# 1. Load the encoder (zero-shot — no fine-tuning required)
+model = DreamRetriever(
+    model_name="Dream-org/Dream-v0-Instruct-7B",
+    max_length=512,
+    n_gen_tokens=4,                       # K = number of [MASK] tokens appended
+    num_denoise_steps=1,                  # 1-step is enough for zero-shot
+    query_prompt="prompts/default/query_prompt_few.yaml",
+    passage_prompt="prompts/default/passage_prompt_few.yaml",
+)
+model.eval()
+
+# 2. Tiny demo corpus
+queries = [
+    "what causes the seasons on earth?",
+    "best way to learn guitar at home",
+]
+passages = [
+    "The tilt of Earth's axis relative to its orbital plane causes seasonal variation in sunlight.",
+    "Pick a beginner-friendly acoustic guitar and practice 15 minutes daily with online tutorials.",
+    "Photosynthesis converts carbon dioxide and water into glucose using sunlight.",
+    "Plate tectonics describes how Earth's lithosphere is divided into moving plates.",
+    "Online video lessons are an efficient way to learn an instrument at your own pace.",
+]
+
+# 3. Encode — one forward pass returns repr_hidden ([N, K, H]) and sparse activations
+with torch.inference_mode():
+    q = model.encode(queries,  is_query=True,  encoding_mode="promptreps", encode_type="all_steps")
+    p = model.encode(passages, is_query=False, encoding_mode="promptreps", encode_type="all_steps")
+
+# 4. ColBERT MaxSim scoring on the K-vector outputs
+q_vec = F.normalize(q["repr_hidden"].float(), dim=-1)         # [Q, K_q, H]
+p_vec = F.normalize(p["repr_hidden"].float(), dim=-1)         # [P, K_p, H]
+sim   = torch.einsum("qkh,pdh->qkpd", q_vec, p_vec)           # [Q, K_q, P, K_p]
+scores = sim.max(dim=-1).values.clamp(min=0).sum(dim=1)       # [Q, P]
+
+# 5. Top-3 hits per query
+for i, query in enumerate(queries):
+    top = scores[i].topk(3)
+    print(f"\nQ: {query}")
+    for s, idx in zip(top.values.tolist(), top.indices.tolist()):
+        print(f"  {s:.3f}  {passages[idx]}")
+```
+
+Expected output (scores will vary slightly across GPUs):
+```
+Q: what causes the seasons on earth?
+  3.21  The tilt of Earth's axis relative to its orbital plane causes seasonal variation in sunlight.
+  2.18  Plate tectonics describes how Earth's lithosphere is divided into moving plates.
+  1.92  Photosynthesis converts carbon dioxide and water into glucose using sunlight.
+
+Q: best way to learn guitar at home
+  3.05  Pick a beginner-friendly acoustic guitar and practice 15 minutes daily with online tutorials.
+  2.41  Online video lessons are an efficient way to learn an instrument at your own pace.
+  1.55  Photosynthesis converts carbon dioxide and water into glucose using sunlight.
+```
+
+That's the whole pipeline — append `K` `[MASK]`s, one forward pass, MaxSim. To swap in **LLaDA**, replace `DreamRetriever` with `LLaDA2Retriever` (`from models.llada_retriever import LLaDA2Retriever`). To run **sparse** retrieval, use the `sparse_indices` / `sparse_values` keys also returned by `encode(...)`. To run **fusion**, blend dense + sparse with min-max normalization. The full sweep is wrapped in `scripts/run_encode.sh` + `scripts/run_eval.sh`.
+
+---
+
+## 🧠 What's in this repo
 
 ```
 src/
@@ -38,6 +133,7 @@ src/
 │   ├── baseline_retriever.py          Zero-shot PromptReps
 │   ├── dream_retriever.py             Dream backbone wrapper
 │   ├── llada_retriever.py             LLaDA backbone wrapper
+│   ├── bottleneck_retriever.py        Bottleneck / Semantic-Hub variant (ablation)
 │   ├── block_schedule.py              Multi-step denoising schedule
 │   ├── backbone_adapters.py           HF model loading / LoRA wiring
 │   └── sparse_utils.py                Sparse score helpers
@@ -70,11 +166,11 @@ prompts/
 └── default                       Representative-token prompts
 ```
 
-Note: this repo bundles only what is needed to reproduce the paper. Internal analysis/plot scripts and benchmark drivers are kept in the research repository and are not redistributed here.
+Note: this repo bundles only what's needed to reproduce the paper. Internal analysis / plot scripts and benchmark drivers are kept in the research repository and are not redistributed here.
 
 ---
 
-## Setup
+## 📦 Setup
 
 We use conda. The pinned `requirements.txt` is a freeze of the env used during development on a single H100 node (CUDA 12.6, Linux x86_64, Python 3.10).
 
@@ -108,7 +204,7 @@ Core versions in the freeze:
 
 ---
 
-## Backbones
+## 🤗 Backbones
 
 The four backbones used in the paper:
 
@@ -123,7 +219,7 @@ The four backbones used in the paper:
 
 ---
 
-## Reproducing the paper
+## 🧪 Reproducing the paper
 
 ### Data
 
@@ -137,6 +233,8 @@ All workflow scripts are minimal portable launchers — open them, edit the vari
 
 ### Zero-shot retrieval
 
+The portable launchers wrap the underlying Python scripts with the canonical paper arguments — open them and edit the variables at the top for your local paths.
+
 ```bash
 # Encode queries and passages (zero-shot DiffRetriever / PromptReps)
 MODEL_TYPE=dream K=4 PROMPT_VARIANT=few \
@@ -148,7 +246,34 @@ QRELS=data/msmarco/qrels.dev.tsv \
     bash scripts/run_eval.sh
 ```
 
-For the (K_q, K_p) sweep over `{1, 2, 4, 8, 16}^2`, loop `run_encode.sh` over the grid (this is what the paper uses to pick `(K_q*, K_p*)` on MS MARCO train). The paper reports `(4, 16)` for Dream and `(4, 4)` for LLaDA.
+Or invoke the underlying scripts directly (this is what the launchers call):
+
+```bash
+# 1. Encode queries — one shard at a time (--input_file is required)
+python scripts/encode_promptreps.py \
+    --model_type dream \
+    --model_name_or_path Dream-org/Dream-v0-Instruct-7B \
+    --input_file  data/msmarco/queries.dev.jsonl \
+    --output_dir  results/dream_few_K4/msmarco/queries \
+    --is_query \
+    --query_prompt   prompts/default/query_prompt_few.yaml \
+    --passage_prompt prompts/default/passage_prompt_few.yaml \
+    --n_gen_tokens 4 --num_denoise_steps 1 \
+    --encode_type all_steps --sparse_topk 256 \
+    --shard_id 0 --num_shards 1
+
+# 2. Encode corpus the same way (--input_file data/msmarco/corpus.jsonl,
+#    drop --is_query, set --num_shards to fan out across the cluster)
+
+# 3. Score — produces summary.json + {mode}.json + {mode}.trec per mode
+python scripts/evaluate_sweep.py \
+    --query_dir  results/dream_few_K4/msmarco/queries \
+    --corpus_dir results/dream_few_K4/msmarco/corpus \
+    --qrels      data/msmarco/qrels.dev.tsv \
+    --output_dir results/dream_few_K4/msmarco/eval
+```
+
+For the `(K_q, K_p)` sweep over `{1, 2, 4, 8, 16}²`, loop the encode call over the grid (this is what the paper uses to pick `(K_q*, K_p*)` on MS MARCO train). The paper reports `(4, 16)` for Dream and `(4, 4)` for LLaDA.
 
 ### Fine-tuning
 
@@ -164,21 +289,32 @@ K_Q=4 K_P=16 \
 #   python scripts/train_repllama.py ...       # RepLLaMA
 ```
 
-All training uses LoRA (r=16, α=64) + DeepSpeed ZeRO-2, InfoNCE with τ=0.01, 1 positive + 15 hard negatives, global batch 128, on the Tevatron MS MARCO augmented triples. Diffusion backbones train at the train-selected `(K_q*, K_p*)`; AR backbones train at `K=4`.
+All training uses LoRA (`r=16, α=64`) + DeepSpeed ZeRO-2, InfoNCE with `τ=0.01`, 1 positive + 15 hard negatives, global batch 128, on the Tevatron MS MARCO augmented triples. Diffusion backbones train at the train-selected `(K_q*, K_p*)`; AR backbones train at `K=4`.
 
 ### Evaluation
 
 ```bash
-# Sweep all score modes over a results directory
-python scripts/evaluate_sweep.py --results_dir <dir> --qrels <qrels>
+# Sweep all score modes against encoded representations (5 modes in one pass:
+# single_dense, multi_dense, sparse_max, fusion_single_sparse_max, fusion_multi_sparse_max)
+python scripts/evaluate_sweep.py \
+    --query_dir  <encoded queries dir> \
+    --corpus_dir <encoded corpus dir> \
+    --qrels      <qrels.tsv> \
+    --output_dir <output dir>
 
-# Or score a single run with pytrec-eval
-python scripts/eval_trec.py --run <runfile> --qrels <qrels>
+# Or score a single TREC run file with pytrec-eval (positional args: qrels first, run second)
+python scripts/eval_trec.py <qrels> <runfile> --metrics mrr_cut_10 ndcg_cut_10
 ```
 
 ---
 
-## Citation
+## 📁 Repository layout
+
+See [What's in this repo](#-whats-in-this-repo) above for the full tree.
+
+---
+
+## 📝 Citation
 
 If you find this work useful, please cite:
 
@@ -193,6 +329,6 @@ If you find this work useful, please cite:
 
 ---
 
-## License
+## 📄 License
 
 MIT — see [`LICENSE`](LICENSE).
