@@ -6,9 +6,9 @@ Paper: "Prompting Large Language Models to Generate Dense and Sparse
         Representations for Zero-Shot Document Retrieval" (EMNLP 2024)
 
 Supports:
-- Single-token mode (num_pooled_tokens=0): one forward pass, hidden state
+- Single-representation mode (num_pooled_tokens=0): one forward pass, hidden state
   at last token position = dense embedding, logits = sparse embedding.
-- Multi-token mode (num_pooled_tokens>0): autoregressive generation of
+- Multi-representation mode (num_pooled_tokens>0): autoregressive generation of
   multiple tokens (stops at closing quote), mean-pool hidden states (dense),
   max-pool logits (sparse).
 - Hybrid dense+sparse retrieval.
@@ -182,7 +182,7 @@ class PromptRepsRetriever(nn.Module):
         encode_type: str = 'all',
         content_token_ids: List = None,
     ) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor]]:
-        """Single-token PromptReps (num_pooled_tokens=0).
+        """Single-representation PromptReps (num_pooled_tokens=0).
 
         Args:
             encode_type: 'all' (both), 'dense' (skip sparse), 'sparse' (skip dense).
@@ -224,7 +224,7 @@ class PromptRepsRetriever(nn.Module):
         sparse_topk: int = 128,
         texts: List[str] = None,
     ) -> Dict[str, torch.Tensor]:
-        """Multi-token all_steps mode: per-position repr_hidden + quotation_emb + sparse.
+        """Multi-representation all_steps mode: per-position repr_hidden + quotation_emb + sparse.
 
         Matches original PromptReps multi_reps layout:
           - repr_hidden[:, 0, :] = hidden state at closing '"' (quotation mark)
@@ -340,7 +340,7 @@ class PromptRepsRetriever(nn.Module):
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Multi-token PromptReps (num_pooled_tokens>0).
+        """Multi-representation PromptReps (num_pooled_tokens>0).
 
         Autoregressively generates tokens, stops at closing quote.
         Mean-pools hidden states (dense), max-pools logits (sparse).
