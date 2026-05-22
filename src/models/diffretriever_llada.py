@@ -1,10 +1,15 @@
 """
-LLaDA Masked Diffusion Retriever
+DiffRetriever — LLaDA backbone (zero-shot).
+
+Uses LLaDA (a from-scratch discrete diffusion LM) as the backbone for
+masked-position prediction retrieval (see paper §3.2).  The model
+appends K masked positions after the retrieval prompt and reads K
+hidden states + K logit vectors from a single bidirectional forward pass.
 
 Supports the full LLaDA family:
   - LLaDA v1   (GSAI-ML/LLaDA-8B-Instruct)   — custom LLaDA arch (vocab 126464), masked diffusion
   - LLaDA v1.5 (GSAI-ML/LLaDA-1.5)            — same arch as v1 (vocab 126464)
-  - LLaDA v2   (inclusionAI/LLaDA2.0-mini)     — custom MoE arch (vocab ~156K), block diffusion
+  - LLaDA v2   (inclusionAI/LLaDA2.0-mini)    — custom MoE arch (vocab ~156K), block diffusion
 
 Encoding strategies:
 1. PromptReps encoding: wraps text with a prompt template, appends [MASK] token(s),

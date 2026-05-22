@@ -1,5 +1,10 @@
 """
-Trainable AR (Auto-Regressive) Retriever — llama/qwen fine-tuning.
+PromptReps — fine-tunable autoregressive variant (LLaMA3 / Qwen2.5).
+
+Contrastively fine-tunable counterpart to src/models/promptreps.py.
+Same retrieval prompt and per-token readout as the zero-shot
+PromptRepsRetriever, but with LoRA-trainable parameters and the
+single-pass bidirectional readout block that paper §3.4 trains.
 
 Sequence layout:
   causal:

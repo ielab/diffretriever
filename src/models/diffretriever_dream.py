@@ -1,10 +1,13 @@
 """
-Dream Diffusion Retriever
+DiffRetriever — Dream backbone (zero-shot).
 
-Uses Dream-v0-Instruct-7B (a discrete diffusion LLM based on Qwen2) for dense
-retrieval via PromptReps. Like LLaDA2, Dream uses bidirectional attention and a
-mask token for diffusion denoising, but without block scheduling — it performs
-full-sequence diffusion.
+Uses Dream-v0-Instruct-7B (a discrete diffusion LLM initialised from Qwen2.5)
+as the backbone for masked-position prediction retrieval (see paper §3.2).
+The model appends K masked positions after the retrieval prompt and reads
+K hidden states + K logit vectors from a single bidirectional forward pass.
+Like LLaDA, Dream uses bidirectional attention and a mask token for
+masked-position denoising; unlike LLaDA, Dream uses full-sequence diffusion
+without block scheduling.
 
 Two encoding strategies:
 1. Clean encoding: Single forward pass, all tokens visible (bidirectional).

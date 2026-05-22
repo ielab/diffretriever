@@ -1,7 +1,10 @@
 """
-Trainable Diffusion Retriever — fine-tunable Dream/LLaDA2 model.
+DiffRetriever — fine-tunable variant (paper §3.4 supervised fine-tuning).
 
-Supports Dream, LLaDA1/1.5, LLaDA2 backbones via backbone_adapters.py.
+Contrastively fine-tunable wrapper around Dream / LLaDA backbones,
+sharing the masked-position prediction encoder with the zero-shot
+DreamRetriever / LLaDA2Retriever classes.  Supports Dream, LLaDA1/1.5,
+LLaDA2 backbones via backbone_adapters.py.
 
 Encoding:
   steps=1 (fast): Single forward pass over [prefix][text][suffix][MASK×K].
