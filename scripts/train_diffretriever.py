@@ -13,7 +13,7 @@ fully differentiable). Supports end-to-end training of both the dense (mean-pool
 and sparse (logit-max-pool over vocabulary) heads.
 
 Usage (4-GPU LoRA, matches the paper recipe):
-    torchrun --nproc_per_node 4 scripts/train_retriever.py \\
+    torchrun --nproc_per_node 4 scripts/train_diffretriever.py \\
         --model_name Dream-org/Dream-v0-Instruct-7B \\
         --model_type dream \\
         --query_prompt  prompts/default/query_prompt_few.yaml \\
@@ -127,7 +127,7 @@ class RetrievalTokenizer:
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / 'src'))
 
-from models.trainable_diff_retriever import TrainableDiffusionRetriever
+from models.diffretriever_trainable import TrainableDiffusionRetriever
 
 logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',

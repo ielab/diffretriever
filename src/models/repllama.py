@@ -1,9 +1,9 @@
 """RepLLaMA-style retriever (Ma et al. 2024, arxiv 2310.08319).
 
 Causal LLaMA backbone with the EOS token appended to every input text. The
-hidden state at the EOS position is the embedding — RepLLaMA uses single-token
-representation by design (NOT mean-pool, NOT K-vec), training the model to
-encode context into that position via InfoNCE.
+hidden state at the EOS position is the embedding — RepLLaMA is a
+single-representation (K=1) retriever by design (NOT mean-pool, NOT K-vec),
+training the model to encode context into that single position via InfoNCE.
 
 Architectural differences from DiffEmbed (the diffusion-LM analog):
 
@@ -17,7 +17,7 @@ Architectural differences from DiffEmbed (the diffusion-LM analog):
 
 Output schema mirrors the existing pipeline: returns ``repr_hidden`` of shape
 [B, 1, H] so downstream ``single_dense`` and ``multi_dense`` modes both reduce
-to the same vector — plug-compatible with encode_promptreps.py /
+to the same vector — plug-compatible with encode.py /
 evaluate_sweep.py / monitor.sh.
 
 Both zero-shot and trained (LoRA) variants are supported via this one class.
@@ -273,7 +273,7 @@ class RepLLaMARetriever(nn.Module):
         ``{'repr_hidden': [B, 1, H] bf16}``.
 
         Signature mirrors DiffEmbedRetriever.encode for plug-compatibility
-        with scripts/encode_promptreps.py's existing dispatch.
+        with scripts/encode.py's existing dispatch.
         """
         if isinstance(texts, str):
             texts = [texts]
@@ -365,7 +365,7 @@ class RepLLaMARetriever(nn.Module):
         model_dir = Path(model_dir)
         cfg_path = model_dir / 'repllama_config.json'
         # Caller-supplied kwargs WIN over saved config — important so
-        # encode_promptreps.py (which passes --max_length 512) gets the
+        # encode.py (which passes --max_length 512) gets the
         # standard inference recipe rather than the training-time 156.
         if cfg_path.exists():
             with open(cfg_path) as f:

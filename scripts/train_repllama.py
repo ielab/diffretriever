@@ -31,7 +31,7 @@ from torch.utils.data import Dataset
 from transformers import Trainer, TrainingArguments
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from src.models.repllama_retriever import RepLLaMARetriever      # noqa: E402
+from src.models.repllama import RepLLaMARetriever      # noqa: E402
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')

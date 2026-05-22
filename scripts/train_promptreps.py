@@ -3,15 +3,15 @@
 Train AR (Llama / Qwen) retriever on MS MARCO.
 
 Supports:
-  K=1 (single-token): hidden state at last " token — dense only or dense+sparse.
-  K>1, causal: autoregressive PromptReps-style generation.
+  K=1 (single-representation): hidden state at last " token — dense only or dense+sparse.
+  K>1, causal (multi-representation): autoregressive PromptReps-style generation.
   K>1, bidirectional: PromptReps-style single-pass readout block
     [", pool_1, ..., pool_{K-1}] with causal masking disabled.
 
 Loss matches TrainableDiffusionRetriever for fair comparison.
 
 Usage:
-    torchrun --nproc_per_node 4 scripts/train_ar_retriever.py \
+    torchrun --nproc_per_node 4 scripts/train_promptreps.py \
         --model_name meta-llama/Meta-Llama-3-8B-Instruct \
         --model_type llama \
         --query_prompt  prompts/default/query_prompt.yaml \
@@ -20,7 +20,7 @@ Usage:
         --output_dir models/llama_k1 \
         --lora_rank 64 --lora_alpha 64
 
-    torchrun --nproc_per_node 4 scripts/train_ar_retriever.py \
+    torchrun --nproc_per_node 4 scripts/train_promptreps.py \
         --model_name Qwen/Qwen2.5-7B-Instruct \
         --model_type qwen \
         --query_prompt  prompts/default/query_prompt.yaml \
@@ -29,7 +29,7 @@ Usage:
         --output_dir models/qwen_k2 \
         --lora_rank 64 --lora_alpha 64
 
-    torchrun --nproc_per_node 4 scripts/train_ar_retriever.py \
+    torchrun --nproc_per_node 4 scripts/train_promptreps.py \
         --model_name Qwen/Qwen2.5-7B-Instruct \
         --model_type qwen \
         --query_prompt  prompts/default/query_prompt.yaml \
@@ -129,7 +129,7 @@ class ARRetrievalTokenizer:
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / 'src'))
 
-from models.trainable_ar_retriever import TrainableARRetriever
+from models.promptreps_trainable import TrainableARRetriever
 
 logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -139,7 +139,7 @@ logger = logging.getLogger(__name__)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Dataset  (identical to train_retriever.py)
+# Dataset  (identical to train_diffretriever.py)
 # ──────────────────────────────────────────────────────────────────────────────
 
 class MSMARCOTrainDataset(Dataset):

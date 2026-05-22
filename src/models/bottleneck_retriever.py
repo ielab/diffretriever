@@ -13,7 +13,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Dict, List, Optional, Tuple
 import logging
-from .trainable_diff_retriever import TrainableDiffusionRetriever
+from .diffretriever_trainable import TrainableDiffusionRetriever
 from .sparse_utils import filter_sparse
 
 logger = logging.getLogger(__name__)

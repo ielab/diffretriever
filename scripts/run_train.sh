@@ -8,10 +8,10 @@
 #
 # For the autoregressive PromptReps and the re-trained baselines
 # (DiffEmbed, RepLLaMA), use the same pattern with their training
-# scripts: train_ar_retriever.py, train_diffembed.py,
+# scripts: train_promptreps.py, train_diffembed.py,
 # train_repllama.py.
 #
-# NOTE: train_retriever.py constructs HF TrainingArguments internally
+# NOTE: train_diffretriever.py constructs HF TrainingArguments internally
 #       (bf16=True, report_to='wandb', save_strategy='steps'), so those
 #       flags are NOT passed on the CLI — only the argparse-defined
 #       hyperparameters below.
@@ -27,7 +27,7 @@ K_Q=${K_Q:-4}
 K_P=${K_P:-16}
 NUM_DENOISE_STEPS=${NUM_DENOISE_STEPS:-1}
 
-# --- Prompts (required by train_retriever.py) ----------------
+# --- Prompts (required by train_diffretriever.py) ----------------
 PROMPT_VARIANT=${PROMPT_VARIANT:-few}              # few | one | three
 QUERY_PROMPT=${QUERY_PROMPT:-prompts/default/query_prompt_${PROMPT_VARIANT}.yaml}
 PASSAGE_PROMPT=${PASSAGE_PROMPT:-prompts/default/passage_prompt_${PROMPT_VARIANT}.yaml}
@@ -48,7 +48,7 @@ LR=${LR:-1e-4}                                      # paper: 1e-4 for LoRA, 1e-5
 LORA_RANK=${LORA_RANK:-16}                          # 0 = full fine-tune
 LORA_ALPHA=${LORA_ALPHA:-64}
 TEMPERATURE=${TEMPERATURE:-0.01}
-N_HARD_NEGS=${N_HARD_NEGS:-15}                      # train_retriever.py: --n_negatives (positive is added implicitly)
+N_HARD_NEGS=${N_HARD_NEGS:-15}                      # train_diffretriever.py: --n_negatives (positive is added implicitly)
 SPARSE_WEIGHT=${SPARSE_WEIGHT:-1.0}
 DENOISING_WEIGHT=${DENOISING_WEIGHT:-0.0}           # >0 → diffusion-native denoising auxiliary
 DIVERSITY_WEIGHT=${DIVERSITY_WEIGHT:-0.0}           # >0 → multi-vector orthogonality hinge
@@ -60,7 +60,7 @@ DEEPSPEED_CONFIG=${DEEPSPEED_CONFIG:-configs/ds_zero2.json}
 [[ -f "${DEEPSPEED_CONFIG}" ]] || { echo "✗ ${DEEPSPEED_CONFIG} missing" >&2; exit 1; }
 
 # --- Launch ---------------------------------------------------
-deepspeed --num_gpus="${NUM_GPUS}" scripts/train_retriever.py \
+deepspeed --num_gpus="${NUM_GPUS}" scripts/train_diffretriever.py \
     --model_type "${MODEL_TYPE}" \
     --model_name "${MODEL_NAME}" \
     --query_prompt   "${QUERY_PROMPT}" \

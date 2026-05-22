@@ -34,7 +34,7 @@ from torch.utils.data import Dataset
 from transformers import Trainer, TrainingArguments
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from src.models.diffembed_retriever import DiffEmbedRetriever      # noqa: E402
+from src.models.diffembed import DiffEmbedRetriever      # noqa: E402
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -267,8 +267,8 @@ def main():
         bf16=args.bf16,
         deepspeed=args.deepspeed,
         gradient_checkpointing=args.gradient_checkpointing,
-        gradient_checkpointing_kwargs={"use_reentrant": False},   # matches train_retriever.py
-        report_to='wandb',                  # matches train_retriever.py
+        gradient_checkpointing_kwargs={"use_reentrant": False},   # matches train_diffretriever.py
+        report_to='wandb',                  # matches train_diffretriever.py
 
         seed=args.seed,
         dataloader_num_workers=2,

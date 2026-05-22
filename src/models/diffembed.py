@@ -18,7 +18,7 @@ Architecture differences from your existing PromptReps-style retriever:
 Output schema mirrors the existing pipeline: returns `repr_hidden` of shape
 [B, 1, H] so downstream `single_dense` and `multi_dense` modes both reduce
 to the same single mean-pooled vector — making it plug-compatible with
-encode_promptreps.py / evaluate_sweep.py / monitor.sh without changes.
+encode.py / evaluate_sweep.py / monitor.sh without changes.
 
 Both zero-shot and trained (LoRA) variants are supported via this one class.
 """
@@ -98,7 +98,7 @@ class DiffEmbedRetriever(nn.Module):
 
         # Gradient checkpointing — must go through the adapter because some
         # backbones (LLaDA1/15) don't support HF's standard
-        # gradient_checkpointing_enable.  Mirrors trainable_diff_retriever.py.
+        # gradient_checkpointing_enable.  Mirrors diffretriever_trainable.py.
         if gradient_checkpointing:
             self.backbone.enable_input_require_grads()
             self.adapter.enable_gradient_checkpointing(self.backbone)
@@ -190,7 +190,7 @@ class DiffEmbedRetriever(nn.Module):
         """Mean over valid (attention_mask=1) positions. [B, L, H] → [B, H].
 
         Reduction is in fp32 to avoid bf16 drift over long sequences (matches
-        trainable_diff_retriever._mean_pool's fp32 reduction pattern).
+        diffretriever_trainable._mean_pool's fp32 reduction pattern).
 
         Memory: instead of casting ``hidden`` to fp32 up-front (a [B, L, H]
         fp32 copy), we keep the masking multiply in bf16 and let
@@ -232,7 +232,7 @@ class DiffEmbedRetriever(nn.Module):
         ``{'repr_hidden': [B, 1, H] bf16}``.
 
         Signature mirrors DreamRetriever.encode / LLaDARetriever.encode so
-        the existing ``else:`` branch in scripts/encode_promptreps.py works
+        the existing ``else:`` branch in scripts/encode.py works
         without a special-case dispatch.
         """
         if isinstance(texts, str):
@@ -348,7 +348,7 @@ class DiffEmbedRetriever(nn.Module):
         model_dir = Path(model_dir)
         cfg_path = model_dir / 'diffembed_config.json'
         # Caller-supplied kwargs WIN over saved config — important so
-        # encode_promptreps.py (which passes --max_length 512) gets the
+        # encode.py (which passes --max_length 512) gets the
         # standard inference recipe rather than the training-time 156.
         if cfg_path.exists():
             with open(cfg_path) as f:

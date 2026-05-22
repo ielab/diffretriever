@@ -36,7 +36,8 @@ class PromptRepsRetriever(nn.Module):
     - Prefix/suffix prompt format (loaded from files or strings)
     - Dense: last-layer hidden state at last token position
     - Sparse: next-token logits with log(1 + ReLU(x)) activation
-    - Single-token or multi-token (autoregressive) generation
+    - Single-representation (K=1, num_pooled_tokens=0) or
+      multi-representation (K>1, num_pooled_tokens>0, sequential AR decoding)
     """
 
     def __init__(
@@ -532,7 +533,7 @@ class PromptRepsRetriever(nn.Module):
                     encoded['input_ids'], encoded['attention_mask']
                 )
             else:
-                # For single-token mode, 'all_steps' is equivalent to 'all'
+                # For single-representation mode (K=1), 'all_steps' is equivalent to 'all'
                 _et = 'all' if encode_type == 'all_steps' else encode_type
                 dense, sparse = self.encode_single_token(
                     encoded['input_ids'], encoded['attention_mask'],

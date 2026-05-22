@@ -24,8 +24,8 @@ set -euo pipefail
 # Zero-shot AR:        llama | qwen | qwen25 | qwen3
 # Fine-tuned:          trained_diff (pair with --model_dir)
 #                      trained_ar   (pair with --model_dir)
-# (Other model types supported by encode_promptreps.py — diffembed_*, repllama —
-#  are trained-only baselines; call encode_promptreps.py directly for those.)
+# (Other model types supported by encode.py — diffembed_*, repllama —
+#  are trained-only baselines; call encode.py directly for those.)
 MODEL_TYPE=${MODEL_TYPE:-dream}
 MODEL_NAME=${MODEL_NAME:-Dream-org/Dream-v0-Instruct-7B}
 MODEL_DIR=${MODEL_DIR:-}                             # required for trained_* types
@@ -97,7 +97,7 @@ fi
 # --- Plumb K through the right flag depending on backbone -------
 # Diffusion (+ trained_diff) → --n_gen_tokens K --num_denoise_steps S
 # Trained AR                 → --n_gen_tokens K   (no denoise steps)
-# Zero-shot AR (llama/qwen)  → --num_pooled_tokens K  (K=1 → 0, single-token mode)
+# Zero-shot AR (llama/qwen)  → --num_pooled_tokens K  (K=1 → 0, single-representation)
 ar_pooled() { [[ "$1" == "1" ]] && echo "0" || echo "$1"; }
 case "${MODEL_TYPE}" in
     dream|llada1|llada15|llada2|llada21|trained_diff)
@@ -135,7 +135,7 @@ echo "════════════════════════�
 echo "  ▶ Queries   ${QUERIES}"
 echo "             →  ${OUTPUT_DIR}/queries   (K_q=${K_Q}, batch=${QUERY_BATCH_SIZE})"
 echo "═════════════════════════════════════════════════════════════"
-python scripts/encode_promptreps.py \
+python scripts/encode.py \
     "${COMMON[@]}" \
     --input_file "${QUERIES}" \
     --output_dir "${OUTPUT_DIR}/queries" \
@@ -149,7 +149,7 @@ echo "════════════════════════�
 echo "  ▶ Corpus    ${CORPUS}"
 echo "             →  ${OUTPUT_DIR}/corpus    (K_p=${K_P}, batch=${BATCH_SIZE})"
 echo "═════════════════════════════════════════════════════════════"
-python scripts/encode_promptreps.py \
+python scripts/encode.py \
     "${COMMON[@]}" \
     --input_file "${CORPUS}" \
     --output_dir "${OUTPUT_DIR}/corpus" \

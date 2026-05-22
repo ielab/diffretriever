@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
-Encode queries/passages using PromptReps-style multi-token encoding.
+Encode queries/passages using the PromptReps-style retrieval prompt with
+K representations per text (single-representation when K=1, multi-representation
+when K>1).
 
 Supported backbones (via --model_type):
     Diffusion: dream, llada1, llada15, llada2
@@ -13,8 +15,8 @@ standalone outputs; both go through save_shard which writes
 .safetensors.zst by default (falls back to .safetensors, then .pt).
 
 Usage:
-    # Zero-shot diffusion, K=4 multi-token
-    python scripts/encode_promptreps.py \\
+    # Zero-shot diffusion — multi-representation, K=4 masked positions
+    python scripts/encode.py \\
         --model_type dream --n_gen_tokens 4 --num_denoise_steps 1 \\
         --model_name_or_path Dream-org/Dream-v0-Instruct-7B \\
         --input_file data/msmarco/queries.dev.jsonl \\
@@ -23,8 +25,8 @@ Usage:
         --query_prompt prompts/default/query_prompt_few.yaml \\
         --passage_prompt prompts/default/passage_prompt_few.yaml
 
-    # Zero-shot AR — LLaMA-3 'one' (single-token)
-    python scripts/encode_promptreps.py \\
+    # Zero-shot AR PromptReps — LLaMA-3 single-representation (K=1)
+    python scripts/encode.py \\
         --model_type llama --num_pooled_tokens 0 \\
         --model_name_or_path meta-llama/Meta-Llama-3-8B-Instruct \\
         --input_file data/msmarco/corpus.jsonl \\
@@ -34,7 +36,7 @@ Usage:
         --shard_id 0 --num_shards 350
 
     # Trained diffusion checkpoint
-    python scripts/encode_promptreps.py \\
+    python scripts/encode.py \\
         --model_type trained_diff --model_dir models_new/dream_few-k4-s1-lora16-sp1.0 \\
         --input_file data/msmarco/queries.dev.jsonl \\
         --output_dir embeddings/msmarco/trained_diff_dream_few_k4_s1-lora16-sp1.0/queries-dev \\
@@ -58,12 +60,12 @@ sys.path.insert(0, str(project_root / 'src'))
 sys.path.insert(0, str(project_root / 'scripts'))
 from shard_io import save_shard, pool_sparse_across_k
 
-from models.baseline_retriever import PromptRepsRetriever
-from models.llada_retriever import LLaDA2Retriever
-from models.dream_retriever import DreamRetriever
+from models.promptreps import PromptRepsRetriever
+from models.diffretriever_llada import LLaDA2Retriever
+from models.diffretriever_dream import DreamRetriever
 from models.block_schedule import BlockSchedule
-from models.trainable_diff_retriever import TrainableDiffusionRetriever
-from models.trainable_ar_retriever import TrainableARRetriever
+from models.diffretriever_trainable import TrainableDiffusionRetriever
+from models.promptreps_trainable import TrainableARRetriever
 from models.sparse_utils import get_content_token_ids, filter_sparse
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -171,7 +173,10 @@ def main():
 
     # AR-specific
     parser.add_argument('--num_pooled_tokens', type=int, default=0,
-                        help='AR: 0=single token, >0=multi-token generation')
+                        help='AR PromptReps: 0=single-representation (one token), '
+                             '>0=multi-representation (autoregressively generate up '
+                             'to this many tokens; the actual K is the count produced '
+                             'before the closing quote)')
     parser.add_argument('--normalize', action='store_true')
 
     # Attention backend.  Default is flash_attention_2 (~1.5-3x faster than
@@ -324,7 +329,7 @@ def main():
         # DiffEmbed-style (Zhang et al. 2025, arxiv 2505.15045):
         # raw text → bidirectional forward → mean-pool. K=1, no sparse, no prompts.
         # model_type = 'diffembed_dream' / 'diffembed_llada1' / 'diffembed_llada2' / 'diffembed_llada15'
-        from models.diffembed_retriever import DiffEmbedRetriever
+        from models.diffembed import DiffEmbedRetriever
         backbone_type = args.model_type[len('diffembed_'):]   # 'dream' / 'llada1' / ...
         # Trained checkpoint?  --model_dir indicates a saved DiffEmbed dir.
         if args.model_dir:
@@ -348,7 +353,7 @@ def main():
         # last-token (EOS) hidden state as the embedding.  Trained-only baseline —
         # the EOS pool is meaningless without contrastive fine-tuning, so we always
         # require --model_dir pointing at a fine-tuned checkpoint.
-        from models.repllama_retriever import RepLLaMARetriever
+        from models.repllama import RepLLaMARetriever
         if not args.model_dir:
             raise ValueError(
                 "--model_type repllama requires --model_dir PATH. "
@@ -459,8 +464,8 @@ def main():
                     encode_type=args.encode_type,
                     sparse_topk=args.sparse_topk,
                 )
-                # all_steps with num_pooled_tokens>0: model returns repr_hidden etc. natively.
-                # all_steps with num_pooled_tokens==0 (single-token): repackage dense/sparse.
+                # all_steps with num_pooled_tokens>0: model returns K>1 repr_hidden etc. natively.
+                # all_steps with num_pooled_tokens==0 (single-representation, K=1): repackage dense/sparse.
                 if args.encode_type == 'all_steps' and 'repr_hidden' not in result:
                     # dense [B, H] → repr_hidden [B, 1, H]
                     if 'dense' in result:

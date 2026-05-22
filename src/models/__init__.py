@@ -1,8 +1,8 @@
-from .llada_retriever import LLaDA2Retriever
-from .dream_retriever import DreamRetriever
+from .diffretriever_llada import LLaDA2Retriever
+from .diffretriever_dream import DreamRetriever
 from .block_schedule import BlockSchedule
-from .baseline_retriever import PromptRepsRetriever
-from .trainable_diff_retriever import TrainableDiffusionRetriever
+from .promptreps import PromptRepsRetriever
+from .diffretriever_trainable import TrainableDiffusionRetriever
 
 # Backward compat alias
 LLaDARetriever = LLaDA2Retriever
