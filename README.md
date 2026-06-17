@@ -43,7 +43,7 @@
 
 <p align="center"><sub><em>Latency scaling on synthetic inputs and indices (single H100, same attention backend across backbones). <strong>Top row:</strong> encoding latency vs. input sequence length. <strong>Bottom row:</strong> search latency vs. index size (log scale). <strong>Left column:</strong> autoregressive PromptReps (Qwen2.5, LLaMA3). <strong>Right column:</strong> DiffRetriever on diffusion backbones (Dream, LLaDA). Open markers = single-representation, filled = multi-representation. DiffRetriever's multi-representation encoding stays close to its single-representation cost, while AR multi-representation remains 2&ndash;3&times; AR single-representation across the input range.</em></sub></p>
 
-> **Models on Hugging Face:** trained checkpoints for DiffRetriever (Dream, LLaDA) and the re-trained baselines (PromptReps, DiffEmbed, RepLLaMA) will be released on the Hugging Face Hub. They are not available yet — this README will be updated with the model URLs when the release lands.
+> **Models on Hugging Face:** trained checkpoints for DiffRetriever (Dream, LLaDA) are available on the [Hugging Face Hub](https://huggingface.co/collections/ielabgroup/diffretriever).
 
 ---
 
