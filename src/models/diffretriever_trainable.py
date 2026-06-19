@@ -2250,14 +2250,34 @@ class TrainableDiffusionRetriever(nn.Module):
 
         load_weights_separately = False
 
-        try:
-            backbone = adapter.load_backbone(model_dir, device_map='auto')
-        except ValueError:
-            # model_dir has no config.json — load architecture from Hub
-            logger.info(f"No valid config.json in {model_dir} — "
-                        f"loading architecture from {adapter.hub_model_name}")
-            backbone = adapter.load_backbone(adapter.hub_model_name, device_map='auto')
-            load_weights_separately = True
+        # ── Released PEFT adapter repo (the layout published on the Hub) ──────
+        # A released checkpoint ships only the LoRA adapter
+        # (adapter_config.json + adapter_model.safetensors/.bin) alongside
+        # retriever_config.json and the tokenizer — there is no base config.json
+        # or full-weight file.  Detect that and load the base backbone from the
+        # Hub, then attach the adapter in place.  PeftModel.from_pretrained
+        # restores the trained LoRA weights, so no separate weight load is
+        # needed and the merge step below folds them in for fast inference.
+        _adapter_cfg = Path(model_dir) / 'adapter_config.json'
+        _base_cfg = Path(model_dir) / 'config.json'
+        _adapter_weights = ((Path(model_dir) / 'adapter_model.safetensors').exists()
+                            or (Path(model_dir) / 'adapter_model.bin').exists())
+        if _adapter_cfg.exists() and _adapter_weights and not _base_cfg.exists():
+            from peft import PeftModel
+            logger.info(f"Detected released PEFT adapter in {model_dir} — "
+                        f"loading base {adapter.hub_model_name} from Hub and "
+                        f"attaching the LoRA adapter")
+            base = adapter.load_backbone(adapter.hub_model_name, device_map='auto')
+            backbone = PeftModel.from_pretrained(base, str(model_dir))
+        else:
+            try:
+                backbone = adapter.load_backbone(model_dir, device_map='auto')
+            except ValueError:
+                # model_dir has no config.json — load architecture from Hub
+                logger.info(f"No valid config.json in {model_dir} — "
+                            f"loading architecture from {adapter.hub_model_name}")
+                backbone = adapter.load_backbone(adapter.hub_model_name, device_map='auto')
+                load_weights_separately = True
 
         # Detect if model.safetensors was saved as a full PEFT state dict by DeepSpeed
         _ckpt = Path(model_dir) / 'model.safetensors'

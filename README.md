@@ -120,6 +120,52 @@ Q: best way to learn guitar at home
 
 That's the whole pipeline — append $K$ masked positions, run one bidirectional forward pass, do MaxSim. To swap in **LLaDA**, replace `DreamRetriever` with `LLaDA2Retriever` (`from models.diffretriever_llada import LLaDA2Retriever`). To run **sparse** retrieval, use the `sparse_indices` / `sparse_values` keys also returned by `encode(...)`. To run **fusion (hybrid)**, blend dense + sparse with min-max normalisation following PromptReps. The full sweep is wrapped in `scripts/run_encode.sh` + `scripts/run_eval.sh`.
 
+### 🤗 Use a fine-tuned checkpoint from the Hub
+
+The demo above runs the base backbone. To use a **fine-tuned** DiffRetriever, load any released checkpoint straight from the Hub. The model code ships inside each repo, so one call (`trust_remote_code=True`) pulls the base backbone, attaches the trained LoRA adapter, and exposes the same `tokenize` / `encode` API. Requires `transformers==4.54.0`.
+
+```python
+import torch
+import torch.nn.functional as F
+from transformers import AutoModel
+
+model = AutoModel.from_pretrained(
+    "ielabgroup/diffretriever-dream-7b-single", trust_remote_code=True)
+model.eval()
+
+queries  = ["what causes the seasons on earth?"]
+passages = [
+    "The tilt of Earth's axis relative to its orbital plane drives the seasons.",
+    "Photosynthesis converts carbon dioxide and water into glucose using sunlight.",
+]
+
+def encode(texts, is_query):
+    ids, mask = model.tokenize(texts, is_query=is_query)
+    dev = next(model.backbone.parameters()).device
+    with torch.inference_mode():
+        return model.encode(ids.to(dev), mask.to(dev),
+                            is_query=is_query, compute_sparse=False)
+
+q = encode(queries,  is_query=True)
+p = encode(passages, is_query=False)
+
+# single-representation (K=1): L2-normalize, then dot product
+qv = F.normalize(q["repr_hidden"].float(), dim=-1).mean(dim=1)   # [Q, H]
+pv = F.normalize(p["repr_hidden"].float(), dim=-1).mean(dim=1)   # [P, H]
+print(qv @ pv.T)                                                 # [Q, P], higher = more relevant
+```
+
+For a **multi-representation** checkpoint (K&gt;1), score with ColBERT MaxSim as in the demo block above. Released checkpoints:
+
+| Repo | Backbone | Representations |
+|---|---|---|
+| [`ielabgroup/diffretriever-dream-7b-single`](https://huggingface.co/ielabgroup/diffretriever-dream-7b-single) | Dream 7B | K=1 (single) |
+| [`ielabgroup/diffretriever-dream-7b-multi-q4-p16`](https://huggingface.co/ielabgroup/diffretriever-dream-7b-multi-q4-p16) | Dream 7B | K_q=4, K_p=16 |
+| [`ielabgroup/diffretriever-llada-8b-single`](https://huggingface.co/ielabgroup/diffretriever-llada-8b-single) | LLaDA 8B | K=1 (single) |
+| [`ielabgroup/diffretriever-llada-8b-multi-q4-p4`](https://huggingface.co/ielabgroup/diffretriever-llada-8b-multi-q4-p4) | LLaDA 8B | K_q=4, K_p=4 |
+
+Each model card has the full per-checkpoint usage and results.
+
 ---
 
 ## 🧠 What's in this repo
